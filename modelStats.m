@@ -1,4 +1,4 @@
-runNumber = 3;
+runNumber = 4;
 logName = ['TrainingLog_0' num2str(runNumber) '.csv'];
 trainLog = readtable(logName);
 
