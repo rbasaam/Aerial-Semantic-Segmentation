@@ -14,7 +14,7 @@ class pathDirectory():
         if workstation == "Home":
             self.aerialFLDR = "C:\\Users\\Basaam Rassas\\OneDrive - Ryerson University\\Computer Vision Research\\Datasets\\Aerial Semantic Segmentation\\"
         if workstation == "Lab":
-            self.aerialFLDR = "C:\\Users\\rbasa\\OneDrive - Toronto Metropolitan University\\Computer Vision Research\\Datasets\\Aerial Semantic Segmentation\\"
+            self.aerialFLDR = "C:\\Users\\rbasa\\Documents\\Aerial-Semantic-Segmentation\\"
 
         self.train_imgs = os.path.join(self.aerialFLDR,  "data\\train\\train_img")
         self.train_mask = os.path.join(self.aerialFLDR,  "data\\train\\train_mask")

@@ -1,2 +1,4 @@
 Learning Rate ,Batch Size ,Patch Size ,Num Batches/Epoch ,Num Epochs
        0.0001 ,        64 ,       128 ,              200 ,       500
+0.01,64,2048,10,10
+1e-05,64,1024,20,400
