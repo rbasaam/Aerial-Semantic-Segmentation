@@ -6,14 +6,16 @@ The package also contains images and masks from the [Aerial Drone Image Dataset]
 
 # How to Use
 ## Package Dependencies
-  torch
-  torchvision
-  tqdm
-  pandas
-  os
-  PIL
-  numpy
-  matlplotlib
+```
+torch
+torchvision
+tqdm
+pandas
+os
+PIL
+numpy
+matlplotlib
+```
 ## First Clone
 Open ```train.py``` and replace the ```rootfolder``` with the path the directory you cloned this repo in.
 ```py
