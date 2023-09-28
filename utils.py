@@ -9,30 +9,34 @@ import random
 from concurrent.futures import ThreadPoolExecutor
 
 class pathDirectory():
-    def __init__(self, workstation="Home"):
-        # Get Path Directory Based on Local Workstation
-        if workstation == "Home":
-            self.aerialFLDR = "C:\\Users\\Basaam Rassas\\OneDrive - Ryerson University\\Computer Vision Research\\Datasets\\Aerial Semantic Segmentation\\"
-        if workstation == "Lab":
-            self.aerialFLDR = "C:\\Users\\rbasa\\Documents\\Aerial-Semantic-Segmentation\\"
+    # Define Relative Paths from Root Folder
+    def __init__(self, rootFolder="Aerial-Semantic-Segmentation\\"):
 
-        self.train_imgs = os.path.join(self.aerialFLDR,  "data\\train\\train_img")
-        self.train_mask = os.path.join(self.aerialFLDR,  "data\\train\\train_mask")
-        self.train_segs = os.path.join(self.aerialFLDR,  "data\\train\\train_seg")
-        self.val_imgs   = os.path.join(self.aerialFLDR,  "data\\val\\val_img")
-        self.val_mask   = os.path.join(self.aerialFLDR,  "data\\val\\val_mask")
-        self.val_segs   = os.path.join(self.aerialFLDR,  "data\\val\\val_seg")
-        self.test_imgs  = os.path.join(self.aerialFLDR,  "data\\test\\test_img")
-        self.test_mask  = os.path.join(self.aerialFLDR,  "data\\test\\test_mask")
-        self.test_segs  = os.path.join(self.aerialFLDR,  "data\\test\\test_seg")        
-        self.mappingPath = os.path.join(self.aerialFLDR, "class_dictionary.csv")
-        self.SAV_FLDR = os.path.join(self.aerialFLDR, "data\\saved_imgs")
-        self.LOG_FLDR = os.path.join(self.aerialFLDR, "logs\\")
+        self.mappingPath = os.path.join(rootFolder, "class_dictionary.csv")
         self.mappingDataframe = pd.read_csv(self.mappingPath, header=0)
-        self.checkpoint_filename = os.path.join(self.aerialFLDR, "my_checkpoint.pth")
         self.num_classes = len(self.mappingDataframe)
+
+        self.train_imgs  = os.path.join(rootFolder, "data\\train\\train_img")
+        self.train_mask  = os.path.join(rootFolder, "data\\train\\train_mask")
+        self.train_segs  = os.path.join(rootFolder, "data\\train\\train_seg")
+        self.val_imgs    = os.path.join(rootFolder, "data\\val\\val_img")
+        self.val_mask    = os.path.join(rootFolder, "data\\val\\val_mask")
+        self.val_segs    = os.path.join(rootFolder, "data\\val\\val_seg")
+        self.test_imgs   = os.path.join(rootFolder, "data\\test\\test_img")
+        self.test_mask   = os.path.join(rootFolder, "data\\test\\test_mask")
+        self.test_segs   = os.path.join(rootFolder, "data\\test\\test_seg")        
+        self.SAV_FLDR    = os.path.join(rootFolder, "data\\saved_imgs")
+        self.LOG_FLDR    = os.path.join(rootFolder, "logs\\")
+
+        checkpointIndex = len(os.listdir(os.path.join(rootFolder, "logs\\checkpoints")))
+        self.checkpoint_filename = os.path.join(rootFolder, f"logs\\checkpoints\\checkpoint_{checkpointIndex+1}.pth")
+
     def showMap(self):
-        return print(self.mappingDataframe.to_string)
+        print("\n ----------------------- Class Map -----------------------\n")
+        print(self.mappingDataframe)
+        print("------------------------------------------------------------\n\n")
+        return 
+    
     def imageChecker(self, folder="train", index=0):
         if folder == "train":
             image_dir = os.listdir(self.train_imgs)
@@ -68,17 +72,20 @@ class pathDirectory():
         plt.tight_layout()
         plt.show()
         return 
-    def summarizeDataset(self, printFlag=None):
+    
+    def summarizeDataset(self):
         image_dir = os.listdir(self.train_imgs)
         image_path = os.path.join(self.train_imgs, image_dir[0])
         image = Image.open(image_path)
-        if printFlag:
-            print("\n ------ Dataset Summary -----\n")
-            print(f"Image Size: {image.size[0]} x {image.size[1]}")
-            print(f"Number of Classes to Identify: {self.num_classes}")
-            print(f"Length of Training Set: {len(os.listdir(self.train_imgs))}")
-            print(f"Length of Validation Set: {len(os.listdir(self.val_imgs))}")
-            print("\n\n")
+
+        print("\n ----------------------- Dataset Summary -----------------------\n")
+        print(f"Image Size:                    {image.size[0]} x {image.size[1]}")
+        print(f"Number of Classes to Identify: {self.num_classes}")
+        print(f"Length of Training Set:        {len(os.listdir(self.train_imgs))}")
+        print(f"Length of Validation Set:      {len(os.listdir(self.val_imgs))}")
+        print(f"Length of Test Set:            {len(os.listdir(self.test_imgs))}")
+        print("--------------------------------------------------------------------")
+        print("\n\n")
         return
 
 def get_loaders(
@@ -120,43 +127,6 @@ def get_loaders(
         pin_memory=pin_memory,
     )
     return train_loader, val_loader
-
-def plot_loss_acc(train_losses, val_losses, train_accuracies, val_accuracies, NUM_EPOCHS):
-    """
-    Plot loss and accuracy progression over training epochs.
-
-    Args:
-        losses (list): List of loss values for each epoch.
-        train_accuracies (list): List of training accuracy values for each epoch.
-        val_accuracies (list): List of validation accuracy values for each epoch.
-        NUM_EPOCHS (int): Total number of training epochs.
-
-    Returns:
-        None
-    """
-    # Create subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-
-    # Plot Training Losses
-    ax1.plot(range(1, NUM_EPOCHS + 1), train_losses, marker='o', linestyle='-', color='b', label='Training Loss')
-    ax1.plot(range(1, NUM_EPOCHS + 1), val_losses, marker='o', linestyle='-', color='r', label='Validation Loss')
-    ax1.set_title('Loss Progression per Epoch')
-    ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('Loss')
-    ax1.grid(True)
-    ax1.legend()
-
-    # Plot Training and Validation Accuracies on ax1
-    ax2.plot(range(1, NUM_EPOCHS + 1), train_accuracies, marker='o', linestyle='-', color='b', label='Training Accuracy')
-    ax2.plot(range(1, NUM_EPOCHS + 1), val_accuracies, marker='o', linestyle='-', color='r', label='Validation Accuracy')
-    ax2.set_title('Accuracy Progression per Epoch')
-    ax2.set_xlabel('Epoch')
-    ax2.set_ylabel('Accuracy')
-    ax2.grid(True)
-    ax2.legend()
-
-    plt.tight_layout()
-    plt.show()
   
 def calculate_iou(loader, model, num_classes, device="cuda"):
     iou_sum = 0
@@ -259,30 +229,33 @@ def showPreds(folder="saved_imgs/", num=3):
 
 def dataLogger(
         logFolder,
-        train_losses,
-        val_losses, 
-        train_accuracies, 
-        val_accuracies, 
+        trainLog, 
         hyperparameters
         ):
     print("\n Logging Data")
 
     trainingFolder = os.path.join(logFolder, "Training")
     current = len(os.listdir(trainingFolder))+1
+
+    # Create Training Log and Hyperparameters Files
     trainingFile = open(os.path.join(trainingFolder, f"TrainingLog_0{current}.csv"), "x")
-    # Create a DataFrame for the training log
-    trainLog = pd.DataFrame({
-        "Epoch": range(1, len(train_losses) + 1),
-        "TrainLoss": train_losses,
-        "ValidationLoss": val_losses,
-        "TrainAccuracy": train_accuracies,
-        "ValidationAccuracy": val_accuracies,
-    })
+    hyperparametersFile = open(os.path.join(logFolder, "Hyperparameters.csv"), "a")
 
     # Save the training log to a CSV file
     trainLog.to_csv(trainingFile, index=False, mode="w", header=True, lineterminator='\n')
+    hyperparameters.to_csv(hyperparametersFile, index=False, mode="a", header=False, lineterminator='\n')
+    
+    # Close Files
+    trainingFile.close()
+    hyperparametersFile.close()
 
-    # Create a DataFrame for hyperparameters and append it to the hyperparameters CSV file
-    hyperparameters_df = pd.DataFrame([hyperparameters])
-    hyperparameters_df.to_csv(os.path.join(logFolder, "Hyperparameters.csv"), mode="a", header=False, index=False)
     print(f"Log Complete for Run {current}")
+    return
+
+def loadModel(modelIndex=1):
+    checkpointPath = f"logs\\checkpoints\\checkpoint_{modelIndex}.pth"
+    if torch.cuda.is_available():
+        checkpoint = torch.load(checkpointPath)
+    else:
+        checkpoint = torch.load(checkpointPath, map_location=torch.device('cpu'))
+    return checkpoint

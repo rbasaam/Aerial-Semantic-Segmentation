@@ -10,57 +10,52 @@ from utils import(
     calculate_iou,
     save_predictions_as_imgs,
     dataLogger,
-    plot_loss_acc,
+    loadModel,
     showPreds,
 )
 
-# Home or Lab
-aerialPaths = pathDirectory(workstation="Lab")
-aerialPaths.summarizeDataset(printFlag=False)
+# Setup Paths
+aerialPaths = pathDirectory(rootFolder="S:\Aerial-Semantic-Segmentation")
+aerialPaths.summarizeDataset()
+aerialPaths.showMap()
 
 # Hyperparameters
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+LEARNING_RATE = 1e-8        # Learning Rate Step Size
+PATCH_SIZE    = 512         # PATCH_SIZE x PATCH_SIZE images
+BATCH_SIZE    = 128         # Number of Images per Batch
+NUM_BATCHES   = 100         # Number of batches to train on
+NUM_EPOCHS    = 5           # Number of times to loop over the batches
+
+# Flags
+LOAD_MODEL    = False       # Load Trained Model
+SAVE_MODEL    = True        # Save Trained Model
+LOG_FILES     = True        # Log Training and Validation Losses and Accuracies
+
+# Device and Data Loading
+DEVICE        = "cuda" if torch.cuda.is_available() else "cpu"
 PIN_MEMORY    = True
 NUM_WORKERS   = 8
-LEARNING_RATE = 1e-9
-BATCH_SIZE    = 64
-PATCH_SIZE    = 64  # 2048 Originally
-NUM_BATCHES   = 200
-NUM_EPOCHS    = 500
-LOAD_MODEL    = False
-SAVE_MODEL    = False
-SAVE_PREDS    = False
 
-hyperparameters = {
-    "LEARNING_RATE": LEARNING_RATE,
-    "BATCH_SIZE": BATCH_SIZE,
-    "PATCH_SIZE": PATCH_SIZE,
-    "NUM_BATCHES": NUM_BATCHES,
-    "NUM_EPOCHS": NUM_EPOCHS,
-}
-
-
+# Training Function
 def train_fn(loader, model, optimizer, loss_fn, scaler, device):
     loop = tqdm(loader, total=NUM_BATCHES)
-
     for batch_id, (data, targets) in enumerate(loop):
         data = data.to(device=device)
         targets = targets.long().to(device=device)
-
         # Forward
         with torch.cuda.amp.autocast():
             predictions = model(data)
             loss = loss_fn(predictions, targets)
-
         # Backward
         optimizer.zero_grad()
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-
         # Update TQDM Loop
         loop.set_postfix(loss=loss.item())
     return loss.item()
+
+# Main Function
 def main():
 
     model = UNET(in_channels=3, out_channels=aerialPaths.num_classes).to(device=DEVICE)
@@ -79,83 +74,91 @@ def main():
         num_workers=NUM_WORKERS,
         pin_memory=PIN_MEMORY,
     )
-   
+   # Lists to Store Losses and Accuracies
     train_losses = []
     val_losses = []
     train_accuracies = []
     val_accuracies = []
-    
+
     # Load Trained and Saved Model
     if LOAD_MODEL: 
-        print(f"\nAttempting to Load Model: {aerialPaths.checkpoint_filename}\n")
+        print("\nAttempting to Load Model:\n")
+        # Initialize Model
         model = UNET(in_channels=3, out_channels=aerialPaths.num_classes).to(device=DEVICE)
-        if torch.cuda.is_available():
-            checkpoint = torch.load(aerialPaths.checkpoint_filename)
-        else:
-            checkpoint = torch.load(aerialPaths.checkpoint_filename, map_location=torch.device(device=DEVICE))
+        # Load Checkpoint
+        checkpoint = loadModel(modelIndex=1)
+        # Load Checkpoint into Model
         model.load_state_dict(checkpoint["state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer"])
-        trainLog = checkpoint["TrainLog"]
-        train_losses = checkpoint["TrainLoss"]
-        val_losses = checkpoint["ValidationLoss"]
-        train_accuracies = checkpoint["TrainAccuracy"]
-        val_accuracies = checkpoint["ValidationAccuracy"]
+        # Set Model to Evaluation Mode
         model.eval()
         print("Load Successful")
-        plot_loss_acc(train_losses, val_losses, train_accuracies, val_accuracies, NUM_EPOCHS)
+        # Show Predictions
         showPreds(folder=aerialPaths.SAV_FLDR, num=5)
     
     #Train Model
     elif LOAD_MODEL==False:
         print("Entering Training Phase\n")
         for epoch in range(NUM_EPOCHS): 
+            # Perform Training on Training Set
             print(f"Epoch {epoch+1}/{NUM_EPOCHS} Training")
             train_loss = train_fn(train_loader, model, optimizer, loss_fn, scaler, device=DEVICE)
+            # Perform Validation on Validation Set
             print(f"Epoch {epoch+1}/{NUM_EPOCHS} Validation")
             val_loss = train_fn(val_loader, model, optimizer, loss_fn, scaler, device=DEVICE)
-
+            # Append Losses and Accuracies to Lists
             train_losses.append(train_loss)
             val_losses.append(val_loss)
             train_accuracies.append(calculate_iou(train_loader, model, num_classes=aerialPaths.num_classes, device=DEVICE)) 
             val_accuracies.append(calculate_iou(val_loader, model, num_classes=aerialPaths.num_classes, device=DEVICE))
-        trainLog = pd.DataFrame(
-            {
-            "Epoch": range(1, NUM_EPOCHS + 1),
-            "TrainLoss": train_losses,
-            "ValidationLoss": val_losses,
-            "TrainAccuracy": train_accuracies,
-            "ValidationAccuracy": val_accuracies,
-            }
-        )
-        dataLogger(
-            logFolder=aerialPaths.LOG_FLDR,
-            train_losses=train_losses,
-            val_losses=val_losses, 
-            train_accuracies=train_accuracies, 
-            val_accuracies=val_accuracies, 
-            hyperparameters=hyperparameters
-            )
+        
+        # Save Model
         if SAVE_MODEL:
-            # Save Model
             print("\nAttempting to Save Model")
+            # Create Checkpoint Dictionary
             checkpoint = {
                 "state_dict": model.state_dict(),
                 "optimizer": optimizer.state_dict(),
-                "TrainLoss": train_losses, 
-                "ValidationLoss": val_losses,
-                "TrainAccuracy": train_accuracies,
-                "ValidationAccuracy": val_accuracies,
-                "TrainLog": trainLog,
-
             }
+
+            # Save Checkpoint
             torch.save(checkpoint, aerialPaths.checkpoint_filename)
-            print("Save Successful\n")
-        if SAVE_PREDS:
+            print(f"Saved {aerialPaths.checkpoint_filename} Successfuly\n")
+
             # Print Some Examples to Folder
             print("Saving Predictions to Folder")
             save_predictions_as_imgs(
                 val_loader, model, classMap=aerialPaths.mappingDataframe, folder=aerialPaths.SAV_FLDR, device=DEVICE, num=20,
             )
+
+        # Log Training, Validation Losses and Accuracies and Hyperparameters
+        if LOG_FILES:
+            print("Creating Log Files")
+            # Hyperparameters Dictionary
+            hyperparameters = {
+                    "LEARNING_RATE": LEARNING_RATE,
+                    "BATCH_SIZE": BATCH_SIZE,
+                    "PATCH_SIZE": PATCH_SIZE,
+                    "NUM_BATCHES": NUM_BATCHES,
+                    "NUM_EPOCHS": NUM_EPOCHS,
+                }
+            hyperparameters = pd.DataFrame(hyperparameters, index=[0])           
+            # Create Dataframe of Training Log
+            trainLog = pd.DataFrame(
+                {
+                    "Epoch": range(1, NUM_EPOCHS + 1),
+                    "TrainLoss": train_losses,
+                    "ValidationLoss": val_losses,
+                    "TrainAccuracy": train_accuracies,
+                    "ValidationAccuracy": val_accuracies,
+                }
+            )
+            # Create Log Files
+            dataLogger(
+                logFolder=aerialPaths.LOG_FLDR,
+                trainLog=trainLog, 
+                hyperparameters=hyperparameters
+                )
 
 if __name__ == "__main__":
     main()
