@@ -19,13 +19,6 @@ aerialPaths = pathDirectory(rootFolder="S:\Aerial-Semantic-Segmentation")
 aerialPaths.summarizeDataset()
 aerialPaths.showMap()
 
-# Hyperparameters
-LEARNING_RATE = 1e-8        # Learning Rate Step Size
-PATCH_SIZE    = 512         # PATCH_SIZE x PATCH_SIZE images
-BATCH_SIZE    = 128         # Number of Images per Batch
-NUM_BATCHES   = 100         # Number of batches to train on
-NUM_EPOCHS    = 5           # Number of times to loop over the batches
-
 # Flags
 LOAD_MODEL    = False       # Load Trained Model
 SAVE_MODEL    = True        # Save Trained Model
@@ -35,6 +28,13 @@ LOG_FILES     = True        # Log Training and Validation Losses and Accuracies
 DEVICE        = "cuda" if torch.cuda.is_available() else "cpu"
 PIN_MEMORY    = True
 NUM_WORKERS   = 8
+
+# Hyperparameters
+LEARNING_RATE = 1e-8        # Learning Rate Step Size
+PATCH_SIZE    = 512         # PATCH_SIZE x PATCH_SIZE images
+BATCH_SIZE    = 128         # Number of Images per Batch
+NUM_BATCHES   = 100         # Number of batches to train on
+NUM_EPOCHS    = 5           # Number of times to loop over the batches
 
 # Training Function
 def train_fn(loader, model, optimizer, loss_fn, scaler, device):
