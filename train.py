@@ -15,14 +15,14 @@ from utils import(
 )
 
 # Setup Paths
-aerialPaths = pathDirectory(rootFolder="S:\Aerial-Semantic-Segmentation")
+aerialPaths = pathDirectory(rootFolder="S:\GitHub\Aerial-Semantic-Segmentation")
 aerialPaths.summarizeDataset()
 aerialPaths.showMap()
 
 # Flags
-LOAD_MODEL    = False       # Load Trained Model
-SAVE_MODEL    = True        # Save Trained Model
-LOG_FILES     = True        # Log Training and Validation Losses and Accuracies
+LOAD_MODEL    = True       # Load Trained Model
+SAVE_MODEL    = False        # Save Trained Model
+LOG_FILES     = False        # Log Training and Validation Losses and Accuracies
 
 # Device and Data Loading
 DEVICE        = "cuda" if torch.cuda.is_available() else "cpu"
@@ -86,7 +86,7 @@ def main():
         # Initialize Model
         model = UNET(in_channels=3, out_channels=aerialPaths.num_classes).to(device=DEVICE)
         # Load Checkpoint
-        checkpoint = loadModel(modelIndex=1)
+        checkpoint = loadModel(modelIndex=2)
         # Load Checkpoint into Model
         model.load_state_dict(checkpoint["state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer"])
