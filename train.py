@@ -20,21 +20,21 @@ aerialPaths.summarizeDataset()
 aerialPaths.showMap()
 
 # Flags
-LOAD_MODEL    = True       # Load Trained Model
-SAVE_MODEL    = False        # Save Trained Model
-LOG_FILES     = False        # Log Training and Validation Losses and Accuracies
+LOAD_MODEL    = False       # Load Trained Model
+SAVE_MODEL    = True        # Save Trained Model
+LOG_FILES     = True        # Log Training and Validation Losses and Accuracies
 
 # Device and Data Loading
 DEVICE        = "cuda" if torch.cuda.is_available() else "cpu"
 PIN_MEMORY    = True
-NUM_WORKERS   = 8
+NUM_WORKERS   = 24
 
 # Hyperparameters
-LEARNING_RATE = 1e-8        # Learning Rate Step Size
-PATCH_SIZE    = 512         # PATCH_SIZE x PATCH_SIZE images
-BATCH_SIZE    = 128         # Number of Images per Batch
-NUM_BATCHES   = 100         # Number of batches to train on
-NUM_EPOCHS    = 5           # Number of times to loop over the batches
+LEARNING_RATE = 1e-6        # Learning Rate Step Size
+PATCH_SIZE    = 1024        # PATCH_SIZE x PATCH_SIZE images
+BATCH_SIZE    = 64          # Number of Images per Batch
+NUM_BATCHES   = 100         # Number of batches to train on per Epoch
+NUM_EPOCHS    = 500         # Number of Epochs to Train For
 
 # Training Function
 def train_fn(loader, model, optimizer, loss_fn, scaler, device):
